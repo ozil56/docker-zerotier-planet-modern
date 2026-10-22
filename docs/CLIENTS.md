@@ -1,36 +1,38 @@
-# 客户端接入：从登录到两台设备互通
+[English README](../README.md) | [简体中文](zh-CN/CLIENTS.md)
 
-先完成 README 的启动检查。以下 UI 文案为英文；括号里解释含义。
+# Client setup: from login to two connected devices
 
-## 1. 在界面创建私有网络
+Complete the README startup checks first. The UI labels below are in English.
 
-1. 登录后进入 **Networks**（网络列表，路径 `/controller/networks`）。
-2. 点击 **Add network**（新建网络），填一个容易识别的名字，例如 `Home`，提交。
-3. 记下页面的 16 位十六进制 **Network ID**。它不是服务器的 10 位节点 ID。
-4. 在该网络进入 **Easy setup**，填写 `Network address in CIDR notation` 为 `10.235.0.0/24`，地址池起点 `10.235.0.10`，终点 `10.235.0.200`，点击 **Submit**。这个网段只是示例，应避开客户端家庭 LAN、VPN、Docker 和其他 ZeroTier 网络网段。
-5. 保持网络为 Private。不要为省略授权而改成 Public。
+## 1. Create a private network
 
-## 2. 获取 Planet 文件
+1. Open **Networks** (`/controller/networks`).
+2. Select **Add network**, enter a recognizable name such as `Home`, and submit.
+3. Record the **16-hex-digit Network ID**. This is different from the server's 10-digit node ID.
+4. Open **Easy setup** for that network. For example, set `Network address in CIDR notation` to `10.235.0.0/24`, the pool start to `10.235.0.10` and the end to `10.235.0.200`, then **Submit**. Choose a subnet that does not overlap any client LAN, VPN, Docker or other ZeroTier network.
+5. Keep the network **Private**. Authorize each member explicitly.
 
-服务器上的文件是项目目录下 **data/dist/planet**。只有 `data/dist/` 是给客户端的公开分发文件；不要复制 `data/one/identity.secret`、`data/config/*signing.json` 或整个 data。
+## 2. Obtain the Planet file
 
-可在管理员电脑使用 SCP 取回（替换服务器和实际安装目录）：
+The file is **data/dist/planet** in the server's project directory. Only `data/dist/` contains client distribution files. Never copy `data/one/identity.secret`, `data/config/*signing.json` or the entire data directory to clients.
+
+On your administrator computer, replace the host and installation path:
 
 ```bash
 scp root@YOUR_SERVER_IP:/root/docker-zerotier-planet-modern/data/dist/planet ./planet
 ```
 
-核对服务端和客户端文件 SHA-256 相同：Linux 用 `sha256sum planet`，Windows PowerShell 用 `Get-FileHash .\planet -Algorithm SHA256`。
+Compare its SHA-256 on both ends: use `sha256sum planet` on Linux or `Get-FileHash .\planet -Algorithm SHA256` in Windows PowerShell.
 
-也提供带密钥的下载服务。默认仅 127.0.0.1:3000，需 README 中的 SSH 转发；密钥在 `data/config/file_server.key`。下载格式为 `http://127.0.0.1:3000/planet?key=<你自己的下载密钥>`。不要公开这个完整 URL，也不要将 UI 密码或 Controller token 当成下载密钥。SCP 无需查看下载密钥，更适合首次安装。
+An authenticated download service is also available at `127.0.0.1:3000`, through the README's SSH tunnel. The key is in `data/config/file_server.key`; the URL format is `http://127.0.0.1:3000/planet?key=<YOUR_DOWNLOAD_KEY>`. Do not publish a complete authenticated URL. The download key is different from the UI password and Controller token. SCP avoids reading the download key and is simpler for the first installation.
 
-`data/dist/` 中还生成了 `.moon` 文件，供已有 Moon 运维经验的用户使用。本文验证的主流程使用 **替换 planet**，不是只 orbit Moon；不需要把两个步骤都做一遍。
+The generated `.moon` file in `data/dist/` is for users who already understand Moon operation. The tested flow here **replaces planet**; it does not merely orbit a Moon. You do not need to perform both approaches.
 
-## 3. Linux 客户端安装 Planet
+## 3. Install Planet on each Linux client
 
-先从 [ZeroTier 官方下载页](https://www.zerotier.com/download/) 安装客户端。下面命令在 **每一台客户端**执行；不要在 Planet 服务器容器中执行 `join`。
+Install a client from the [official ZeroTier download page](https://www.zerotier.com/download/). Run these commands on **each client**, not in the Planet server container.
 
-替换客户端 Planet 前，确认这台客户端允许短暂断网。已有客户端需要备份原文件；不要删除 identity.secret，否则节点 ID 会改变。
+Replacing Planet briefly disconnects that client. Arrange the interruption first. Back up its old planet file and preserve `identity.secret` so that its node ID stays unchanged.
 
 ```bash
 sudo systemctl stop zerotier-one
@@ -48,7 +50,7 @@ sudo install -m 0644 ./planet /var/lib/zerotier-one/planet
 sudo systemctl start zerotier-one
 ```
 
-把下面占位符替换成第 1 步的真实 16 位 Network ID：
+Replace the placeholder with the actual Network ID from step 1:
 
 ```bash
 sudo zerotier-cli join YOUR_16_DIGIT_NETWORK_ID
@@ -58,41 +60,41 @@ sudo zerotier-cli join YOUR_16_DIGIT_NETWORK_ID
 sudo zerotier-cli info
 ```
 
-记下这台客户端的 10 位节点 ID。此时网络可能为 `ACCESS_DENIED`，因为还没授权。
+Record this client's 10-digit node ID. `ACCESS_DENIED` is expected until it is authorized.
 
-## 4. 授权两台客户端
+## 4. Authorize and test two clients
 
-回到管理 UI 的该网络详情页。在成员列表核对节点 ID，勾选对应 **Authorized**。只授权自己的设备。每台客户端执行：
+Return to that network's detail page. Match the member node IDs and select **Authorized** only for your devices. On each client:
 
 ```bash
 sudo zerotier-cli listnetworks
 ```
 
-预期目标网络状态 `OK`，并分配了 `10.235.0.x/24` 地址。若为空，检查 Easy setup 的地址池和 IPv4 自动分配设置。
+Expect status `OK` and an address such as `10.235.0.x/24`. If no address appears, check Easy setup and IPv4 address assignment.
 
-在 A 上 ping B 的 **ZeroTier 地址**，在 B 上反向测试。例如 B 实际分到 `10.235.0.20` 时：
+Ping B's **ZeroTier address** from A, then reverse the test. For example, only if B actually received `10.235.0.20`:
 
 ```bash
 ping -c 10 10.235.0.20
 ```
 
-同时检查 `zerotier-cli peers`，应能看到私有根节点。网络 ID、IP、节点 ID 都以自己的实际值为准，不要复制验证记录中的随机值。
+Also check `zerotier-cli peers` for the private root. Use your own network ID, node IDs and addresses, not random values from validation records.
 
-## Windows / macOS 的位置提示
+## Windows and macOS path references
 
-本次自动化联调实际运行了两个 Linux 客户端；下面是平台路径提示，不冒充 Windows/macOS 的端到端实测。
+The integration tests used two Linux clients. These are path references, not claims of end-to-end Windows/macOS validation.
 
-| 平台 | Planet 通常所在目录 | 提示 |
+| Platform | Usual Planet directory | Notes |
 | --- | --- | --- |
-| Windows | `C:\ProgramData\ZeroTier\One\` | 需要管理员权限；在服务管理器停止/启动 ZeroTier One，再替换文件；GUI 中加入网络 |
-| macOS | `/Library/Application Support/ZeroTier/One/` | 需要管理员权限；服务控制方式参照所安装版本的官方文档 |
+| Windows | `C:\ProgramData\ZeroTier\One\` | Administrator rights required. Stop/start ZeroTier One in Services around file replacement; join using the GUI |
+| macOS | `/Library/Application Support/ZeroTier/One/` | Administrator rights required. Follow the installed version's official service-control instructions |
 
-Android/iOS 等客户端是否允许替换 Planet，取决于所用客户端构建，本项目没有打包移动端客户端，也没有验证该流程。
+Android/iOS support for replacing Planet depends on the client build. This project neither packages mobile clients nor validates that workflow.
 
-## 接入不成功时
+## If connection fails
 
-- 看不到成员：核对 Network ID、planet 摘要、UDP 端口、安全组、服务端实际公网地址，确认客户端服务重启过。
-- 成员已出现但 ACCESS_DENIED：核对节点 ID 后在 UI 授权。
-- OK 但没有 IP：检查地址池和分配开关。
-- 有 IP 但 ping 不通：检查两端 OS 防火墙是否允许该网卡上的 ICMP、是否网段冲突；不要直接关闭整个防火墙。
-- 页面可打开但不能创建网络：检查容器日志与 Controller 健康，不要重新初始化已有 data。
+- No member appears: check the Network ID, Planet hash, UDP port, security group, real public endpoint and client restart.
+- Member appears with ACCESS_DENIED: verify its node ID and authorize it.
+- OK without an IP: check address pools and assignment settings.
+- IP assigned but no ping: check subnet overlap and both client firewalls' ICMP rules for the ZeroTier interface. Do not disable the entire firewall.
+- UI opens but cannot create networks: check container logs and Controller health. Do not reinitialize existing data.

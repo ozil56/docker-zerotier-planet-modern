@@ -1,64 +1,66 @@
-# 验证记录 — 2026-10-22
+[English README](../README.md) | [简体中文](zh-CN/VALIDATION.md)
 
-本页记录实际执行结果，不把文档中的所有平台示例都当作已实测。
+# Executed validation — 2026-10-22
 
-## 环境与构建
+This page records actual results. Platform examples in documentation are not automatically counted as tested.
 
-- 独立测试机 ali-test，Ubuntu 26.04，Linux amd64，Docker 29.1.3，Compose 2.40.3。
-- 生产服务没有参与本次发行包测试；测试重新生成独立服务器身份和两个客户端身份。
-- 从仓库 Dockerfile 的固定官方源码完成构建，耗时约 590 秒。运行版本为 Node 24.22.1、ZeroTier 1.16.2、Alpine 3.24.3。
-- 基础镜像从 Docker 官方 registry 下载并逐层校验摘要；测试机直连 Hub 超时，导入校验后的相同镜像。GitHub/Alpine/npm 下载通过受限的临时网络代理，TLS 校验保持启用。
-- ZeroTier 正式提交和归档 SHA-256、Node 基础镜像观察摘要见 `sources.lock.json`。基础镜像标签和 Alpine 安全包可能随时间变化，因此不宣称每次构建逐字节相同。
+## Environment and build
 
-## 按文档执行的结果
+- Independent ali-test host: Ubuntu 26.04, Linux amd64, Docker 29.1.3, Compose 2.40.3.
+- Production was not involved. Each run generated an independent server identity and two client identities.
+- A full Dockerfile build from pinned official source completed in about 590 seconds: Node 24.22.1, ZeroTier 1.16.2, Alpine 3.24.3.
+- The base image came from Docker's official registry with layer digest verification. Direct Hub access timed out on the test host, so the verified image was imported. GitHub/Alpine/npm downloads used a temporary restricted proxy with TLS verification enabled.
+- Official ZeroTier commit/archive hashes and observed Node image digests are in [sources.lock.json](../sources.lock.json). Tags and Alpine security packages may change over time; builds are not claimed to be bit-for-bit reproducible.
 
-| 文档步骤 | 实际验证 | 结果 |
+## Steps actually exercised
+
+| Step | Check | Result |
 | --- | --- | --- |
-| .env 配置 / Compose 校验 | 从示例生成配置，`docker compose config --quiet` | 通过 |
-| 构建 | 执行同一 Dockerfile 全部阶段，编译正式源码并 npm ci | 通过 |
-| 初始化 | `docker compose --profile tools run --rm init` | 通过，独立随机身份/密码 |
-| 防误覆盖 | 再次 init，检查拒绝和原身份摘要 | 通过，身份不变 |
-| 启动 / 状态 | `docker compose up -d --no-build planet` 和健康检查 | 通过 |
-| CLI | README 的 `zerotier-cli -D/var/lib/zerotier-one info` | 通过，版本 1.16.2 |
-| UI 登录 | 使用生成的随机管理员密码提交登录表单 | 通过 |
-| 网络 | UI 表单创建私有网络，配置 Easy setup 地址池 | 通过 |
-| 下载 | 无密钥返回 401，有密钥内容与 planet 完全一致 | 通过 |
-| 客户端 | 两个新 Linux 客户端加入网络，UI 表单授权，状态 OK | 通过 |
-| 首次通信 | A→B、B→A 各 10 包 ping | 两个方向均 0 丢包 |
-| 重启 | Compose restart，重新登录、原网络、客户端复验 | 通过；双向各 10 包 0 丢包 |
-| 备份 | 文档提供的 backup.sh，实际导出数据与镜像并恢复运行 | 通过，SHA256SUMS 核对通过 |
-| 恢复 | 停止测试实例，解压备份、导入镜像、用恢复数据启动 | 通过；身份/Planet/账号哈希不变 |
-| 恢复后通信 | 再次登录、原网络、两个客户端复验 | 双向各 10 包 0 丢包 |
-| 权限 | 实际检查容器配置 | UID 10001、cap_drop ALL、非 privileged、只读根文件系统 |
-| 收尾 | 停止测试根节点和两个客户端 | 已停止，数据保留 |
+| Configuration | .env from example; `docker compose config --quiet` | Passed |
+| Build | All Dockerfile stages, official source compile, npm ci | Passed |
+| Initialization | `docker compose --profile tools run --rm init` | Independent random identity/password |
+| Overwrite protection | Repeated init and compared identity hash | Refused; identity unchanged |
+| Startup | `docker compose up -d --no-build planet`, healthcheck | Passed |
+| CLI | `zerotier-cli -D/var/lib/zerotier-one info` | Version 1.16.2 |
+| UI login | Generated administrator password via login form | Passed |
+| Network | UI creation and Easy setup address pool | Passed |
+| Download | No key / valid key / byte comparison | 401 without key; exact Planet with key |
+| Clients | Two fresh Linux clients, UI authorization | Both OK |
+| Initial traffic | A→B and B→A, 10 pings each | 0% loss both ways |
+| Restart | Compose restart, login, original network and clients | Passed; 10 pings each way, 0% loss |
+| Backup | backup.sh exports state/image and restores running state | Passed; SHA256SUMS verified |
+| Restore | Stop test instance, extract state, load image, start | Identity/Planet/account hashes unchanged |
+| Restored traffic | Login, original network and both clients | 10 pings each way, 0% loss |
+| Runtime permissions | Container configuration | UID 10001, cap_drop ALL, no privileged, read-only root |
+| Cleanup | Stop test root and clients | Stopped; evidence/data retained |
 
-可复查的脱敏步骤摘要见 `validation-results.json`。同一测试脚本为 `tests/integration.py`，只能在专门的新测试目录运行，见文件头。它创建 internal Docker 网络并取消主机端口映射，不能指向既有生产数据。
+Sanitized records are in [validation-results.json](validation-results.json). The same [integration script](../tests/integration.py) requires a dedicated new test directory and explicit isolated-test confirmation. It creates an internal Docker network and removes host port mappings. Never point it at production data. Reusing a test host can require resolving names of retained stopped test containers before another run; do not delete unrelated containers.
 
-## 发布后复验
+## Verification of the published source
 
-公开仓库首个完整提交 `f4f3cb1bde4ae58beb9b176c639111cb8a68f84b` 发布后，本机匿名 Git 克隆核对 69 个文件逐字节一致。ali-test 的 Git HTTPS 连接受网络限制中断，改用 GitHub 官方 codeload 的该固定提交归档；已把归档获取方式补入 README。
+After publishing initial source commit `f4f3cb1bde4ae58beb9b176c639111cb8a68f84b`, an anonymous local Git clone matched all 69 files byte for byte. Git HTTPS on ali-test failed due to network restrictions, so that exact commit was downloaded from official GitHub codeload. The README includes this fallback.
 
-2026-10-22 18:19（北京时间）完成第二轮：对公开归档执行 `docker compose build planet`，随后完整重跑初始化、登录、建网、双客户端通信、重启、备份和恢复，全部通过。为使用测试机 loopback 的临时下载代理，构建时附加了仅用于实验的 build network=host 覆盖；运行时仍为 internal 隔离网络。首次 Compose 构建未附加该覆盖导致 npm 无法连接代理，修正后通过。此网络设置不是默认生产运行配置。
+A second complete run finished at **2026-10-22 18:19 China Standard Time (UTC+8)**: `docker compose build planet` from the public archive, initialization, login, network creation, two-client traffic, restart, backup and restoration all passed. A test-only build network=host override allowed the build to reach the temporary loopback proxy. The initial Compose build without that override could not reach npm through the proxy; it passed after correction. Runtime networking remained isolated. This build workaround is not the default production configuration.
 
-两轮均使用新身份；每轮三组双向各 10 包 ping，全部 0 丢包。验证机上的测试服务最终均停止。`validation-results.json` 同时保留两轮脱敏结果。
+Each run used fresh identities and three rounds of ten pings in both directions, all with zero loss. Test services were stopped afterward. The JSON retains both runs. Later English/Chinese/Spanish/French/German/Japanese documentation changes did not alter the tested runtime; they are not additional remote test runs.
 
-## 发现并修正的问题
+## Problems found and corrected
 
-1. 最初 Git fetch 遇到网络中断，改为固定提交归档加 SHA-256 校验后构建成功。
-2. 最初 Compose tmpfs 的 flow-list 字符串没有引号，配置校验通过但容器创建失败；已修正并在新空目录从头运行成功。
-3. 复查 README 时修正 ZeroTier CLI home 参数，最终文档命令已实际执行。
+1. Git fetch failed during initial downloads; pinned commit archive plus SHA-256 verification succeeded.
+2. An unquoted Compose tmpfs flow-list string passed config parsing but failed at container creation. Quoting it fixed the issue; a new empty-directory run then passed.
+3. The README's ZeroTier CLI home argument was corrected and the final command was executed.
 
-## 安全复核
+## Security review and limits
 
-2026-10-22 使用锁文件执行 `npm audit --omit=dev`，结果为 **0 项已知告警**。这仅是 npm 公告覆盖的依赖检查；不是对所有操作系统包、核心协议、业务逻辑的完整安全认证，也不是未来无漏洞的保证。
+On 2026-10-22, `npm audit --omit=dev` using the lockfile reported **zero known advisories**. This covers npm's dependency advisory database, not all OS packages, protocol behavior or business logic, and is not a guarantee against future vulnerabilities.
 
-所有公开文件经过私有基础设施标记和敏感文件排查；仓库不含运行数据、私钥、Token、用户密码、服务器清单和业务备份。UI 原有版权和许可证保留。
+Public files were checked for private infrastructure markers and sensitive files. They contain no runtime identities, private keys, tokens, user passwords, server inventory or business backups. Original UI copyright and licensing are retained.
 
-## 尚未覆盖
+Not covered by this fresh-install test:
 
-- Docker Engine 在空白 Ubuntu 上的首次安装：验证机已有 Docker，文档引用官方安装教程。
-- 云安全组、公网 UDP、域名 TLS 与真实跨公网 NAT 的全新接入：本轮端到端通信使用隔离网络；真实部署仍需 CLIENTS.md 的两台设备验收。
-- Windows/macOS/移动客户端的完整新装过程、ARM 架构、SSO、服务器自身入网模式、外部 DB。
-- IPv6 实际路由与公网可达性、迁移后更改公网端点的自动重签与分发。
+- Installing Docker Engine on a blank Ubuntu host; Docker was already present, and the README links to its official instructions.
+- Cloud security groups, public UDP, domain TLS and real cross-Internet NAT onboarding. These runs used an isolated network; each real deployment still needs the two-device acceptance checks.
+- Full Windows/macOS/mobile setup, ARM, SSO, server network membership or external databases.
+- Working IPv6 public routing or automatic endpoint re-signing/distribution after migration.
 
-没有把这些未验证项目写成“已支持并验证”。
+These are not presented as verified features.
