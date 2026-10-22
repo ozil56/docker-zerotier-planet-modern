@@ -112,4 +112,4 @@ sh scripts/backup.sh
 
 Les sauvegardes contiennent des secrets et **ne sont pas chiffrées**. Conservez une copie chiffrée hors du serveur. Consultez les guides anglais de [restauration](docs/BACKUP.md), de [dépannage](docs/TROUBLESHOOTING.md) et de [validation](docs/VALIDATION.md).
 
-Deux essais complets sur ali-test ont couvert installation, deux clients Linux, redémarrage et restauration. Ils ne valident pas toutes les plateformes clientes, ARM ni toutes les topologies NAT publiques. Un redémarrage ferme les sessions de l'interface, mais conserve l'identité et les réseaux.
+Deux essais complets sur un serveur de test situé en Chine continentale ont couvert installation, deux clients Linux, redémarrage et restauration. Ils ne valident pas toutes les plateformes clientes, ARM ni toutes les topologies NAT publiques. Un redémarrage ferme les sessions de l'interface, mais conserve l'identité et les réseaux.

@@ -20,7 +20,7 @@
 | 运行权限 | UID 10001、cap_drop ALL、只读根文件系统；不需要 privileged 或 TUN |
 | 初始化 | 每次全新安装生成独立身份、签名密钥和随机管理员密码 |
 
-它只提供 Planet/Controller/UI；服务器容器不加入用户网络，不承担 IPTV 等其他业务。本版关闭 SSO 编译，面向普通非 SSO 的私有网络。首次发布主要验证 Linux amd64；没有验证的架构和客户端平台不会宣称支持。
+它只提供 Planet/Controller/UI；服务器容器不加入用户网络。本版关闭 SSO 编译，面向普通非 SSO 的私有网络。首次发布主要验证 Linux amd64；没有验证的架构和客户端平台不会宣称支持。
 
 ## 先阅读这三点
 
@@ -68,7 +68,7 @@ git clone https://github.com/ozil56/docker-zerotier-planet-modern.git
 cd docker-zerotier-planet-modern
 ```
 
-若 Git 克隆因网络限制失败，可使用 GitHub 官方源码归档（这是 ali-test 实测的获取方式）：
+若 Git 克隆因网络限制失败，可使用 GitHub 官方源码归档（这是 中国境内测试服务器实测的获取方式）：
 
 ```bash
 curl --fail --location --retry 3 https://codeload.github.com/ozil56/docker-zerotier-planet-modern/tar.gz/refs/heads/main -o planet-modern-source.tar.gz

@@ -112,4 +112,4 @@ sh scripts/backup.sh
 
 Backups enthalten Geheimnisse und sind **nicht verschlüsselt**. Verschlüsselte Kopien außerhalb des Servers aufbewahren. Weitere englische Anleitungen: [Wiederherstellung](docs/BACKUP.md), [Fehlersuche](docs/TROUBLESHOOTING.md), [Testergebnisse](docs/VALIDATION.md).
 
-Zwei vollständige Durchläufe auf ali-test prüften Installation, zwei Linux-Clients, Neustart und Wiederherstellung. Das bestätigt nicht sämtliche Client-Plattformen, ARM oder öffentliche NAT-Topologien. Nach einem Neustart ist eine erneute UI-Anmeldung nötig; Identität und Netzwerke bleiben erhalten.
+Zwei vollständige Durchläufe auf einem Testserver in Festlandchina prüften Installation, zwei Linux-Clients, Neustart und Wiederherstellung. Das bestätigt nicht sämtliche Client-Plattformen, ARM oder öffentliche NAT-Topologien. Nach einem Neustart ist eine erneute UI-Anmeldung nötig; Identität und Netzwerke bleiben erhalten.

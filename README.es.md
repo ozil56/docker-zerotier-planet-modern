@@ -112,4 +112,4 @@ sh scripts/backup.sh
 
 Las copias contienen secretos y **no están cifradas**; guárdelas cifradas fuera del servidor. Consulte [restauración](docs/BACKUP.md), [solución de problemas](docs/TROUBLESHOOTING.md) y [pruebas realizadas](docs/VALIDATION.md), en inglés.
 
-Dos pruebas completas en ali-test cubrieron instalación, dos clientes Linux, reinicio y restauración. No equivalen a validar todos los sistemas cliente, ARM o todas las topologías NAT públicas. Un reinicio requiere volver a iniciar sesión en la UI, pero conserva la identidad y las redes.
+Dos pruebas completas en un servidor de pruebas ubicado en China continental cubrieron instalación, dos clientes Linux, reinicio y restauración. No equivalen a validar todos los sistemas cliente, ARM o todas las topologías NAT públicas. Un reinicio requiere volver a iniciar sesión en la UI, pero conserva la identidad y las redes.

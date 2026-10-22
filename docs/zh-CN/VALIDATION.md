@@ -6,7 +6,7 @@
 
 ## 环境与构建
 
-- 独立测试机 ali-test，Ubuntu 26.04，Linux amd64，Docker 29.1.3，Compose 2.40.3。
+- 中国境内的独立测试服务器，Ubuntu 26.04，Linux amd64，Docker 29.1.3，Compose 2.40.3。
 - 生产服务没有参与本次发行包测试；测试重新生成独立服务器身份和两个客户端身份。
 - 从仓库 Dockerfile 的固定官方源码完成构建，耗时约 590 秒。运行版本为 Node 24.22.1、ZeroTier 1.16.2、Alpine 3.24.3。
 - 基础镜像从 Docker 官方 registry 下载并逐层校验摘要；测试机直连 Hub 超时，导入校验后的相同镜像。GitHub/Alpine/npm 下载通过受限的临时网络代理，TLS 校验保持启用。
@@ -38,7 +38,7 @@
 
 ## 发布后复验
 
-公开仓库首个完整提交 `f4f3cb1bde4ae58beb9b176c639111cb8a68f84b` 发布后，本机匿名 Git 克隆核对 69 个文件逐字节一致。ali-test 的 Git HTTPS 连接受网络限制中断，改用 GitHub 官方 codeload 的该固定提交归档；已把归档获取方式补入 README。
+公开仓库首个完整提交 `f4f3cb1bde4ae58beb9b176c639111cb8a68f84b` 发布后，本机匿名 Git 克隆核对 69 个文件逐字节一致。测试服务器的 Git HTTPS 连接受网络限制中断，改用 GitHub 官方 codeload 的该固定提交归档；已把归档获取方式补入 README。
 
 2026-10-22 18:19（北京时间）完成第二轮：对公开归档执行 `docker compose build planet`，随后完整重跑初始化、登录、建网、双客户端通信、重启、备份和恢复，全部通过。为使用测试机 loopback 的临时下载代理，构建时附加了仅用于实验的 build network=host 覆盖；运行时仍为 internal 隔离网络。首次 Compose 构建未附加该覆盖导致 npm 无法连接代理，修正后通过。此网络设置不是默认生产运行配置。
 

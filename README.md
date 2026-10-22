@@ -20,7 +20,7 @@ This explains the motivation for this release; it is not a claim about the upstr
 | Runtime | UID 10001, cap_drop ALL, read-only root filesystem; no privileged mode or TUN |
 | Initialization | Independent identities, signing keys and a random administrator password |
 
-The server container provides Planet/Controller/UI only. It does not join user networks or run unrelated services such as IPTV. SSO is disabled in this build. Linux amd64 is the tested target; other architectures and platforms are not claimed as validated.
+The server container provides Planet/Controller/UI only. It does not join user networks. SSO is disabled in this build. Linux amd64 is the tested target; other architectures and platforms are not claimed as validated.
 
 ## Read before installing
 
@@ -68,7 +68,7 @@ git clone https://github.com/ozil56/docker-zerotier-planet-modern.git
 cd docker-zerotier-planet-modern
 ```
 
-If Git cloning fails because of network restrictions, use GitHub's official archive instead. This fallback was tested on ali-test. Run it from the parent directory, with **no existing destination directory**:
+If Git cloning fails because of network restrictions, use GitHub's official archive instead. This fallback was tested on a test server located in mainland China. Run it from the parent directory, with **no existing destination directory**:
 
 ```bash
 curl --fail --location --retry 3 https://codeload.github.com/ozil56/docker-zerotier-planet-modern/tar.gz/refs/heads/main -o planet-modern-source.tar.gz
@@ -215,4 +215,4 @@ A restart invalidates UI sessions; it does not regenerate the identity or delete
 - [Executed tests and limitations](docs/VALIDATION.md)
 - [Changelog](CHANGELOG.md)
 
-The release passed two isolated installation-to-recovery runs on ali-test. Each used fresh identities and two Linux clients. This does not establish coverage of every client platform, public NAT topology or host setup. A vulnerability scan is a point-in-time result, not a permanent guarantee; review Node, ZeroTier, Alpine and npm advisories as part of ongoing maintenance.
+The release passed two isolated installation-to-recovery runs on a test server located in mainland China. Each used fresh identities and two Linux clients. This does not establish coverage of every client platform, public NAT topology or host setup. A vulnerability scan is a point-in-time result, not a permanent guarantee; review Node, ZeroTier, Alpine and npm advisories as part of ongoing maintenance.
