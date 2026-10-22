@@ -1,0 +1,49 @@
+name: zerotier-planet-modern
+x-image: &image
+  image: ${PLANET_IMAGE:-zerotier-planet-modern:2026.10.22}
+  build:
+    context: .
+    args:
+      ACCEPT_ZEROTIER_SOURCE_LICENSE: ${ACCEPT_ZEROTIER_SOURCE_LICENSE:-no}
+services:
+  init:
+    <<: *image
+    profiles: [tools]
+    user: "0:0"
+    network_mode: none
+    entrypoint: [node, /opt/init.js]
+    environment:
+      ACCEPT_ZEROTIER_SOURCE_LICENSE: ${ACCEPT_ZEROTIER_SOURCE_LICENSE:-no}
+      PUBLIC_IPV4: ${PUBLIC_IPV4:?Set PUBLIC_IPV4 in .env}
+      PUBLIC_IPV6: ${PUBLIC_IPV6:-}
+      ZT_PORT: ${ZT_PORT:-9994}
+    volumes:
+      - ./data:/data
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
+  planet:
+    <<: *image
+    user: "10001:10001"
+    restart: unless-stopped
+    stop_grace_period: 25s
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
+    pids_limit: 256
+    environment:
+      NODE_ENV: production
+      HTTP_PORT: "3443"
+      HTTP_ALL_INTERFACES: "true"
+    ports:
+      - "${ZT_PORT:-9994}:${ZT_PORT:-9994}/udp"
+      - "${UI_BIND:-127.0.0.1}:${UI_PORT:-3443}:3443/tcp"
+      - "${DOWNLOAD_BIND:-127.0.0.1}:${DOWNLOAD_PORT:-3000}:3000/tcp"
+    volumes:
+      - ./data/one:/var/lib/zerotier-one
+      - ./data/ui-etc:/opt/ztncui/etc
+      - ./data/config:/app/config:ro
+      - ./data/dist:/app/dist:ro

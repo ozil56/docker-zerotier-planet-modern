@@ -1,0 +1,12 @@
+**
+!Dockerfile
+!ui/**
+!runtime/**
+!licenses/**
+!LICENSE
+!THIRD_PARTY_NOTICES.md
+!scripts/build-core.sh
+!sources.lock.json
+ui/node_modules
+ui/etc
+ui/.env

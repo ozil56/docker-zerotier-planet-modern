@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-22",
+  "scope": "isolated synthetic fresh-install documentation test",
+  "production_data_included": false,
+  "passed": true,
+  "steps": [
+    {
+      "step": "README configuration validation",
+      "passed": true
+    },
+    {
+      "step": "README first initialization",
+      "passed": true
+    },
+    {
+      "step": "Repeated initialization refuses without changing identity",
+      "passed": true
+    },
+    {
+      "step": "README start and healthy",
+      "passed": true
+    },
+    {
+      "step": "README generated admin password login and CLI info",
+      "passed": true
+    },
+    {
+      "step": "CLIENTS UI create private network and Easy setup",
+      "passed": true
+    },
+    {
+      "step": "CLIENTS authenticated download matches Planet file; anonymous denied",
+      "passed": true
+    },
+    {
+      "step": "CLIENTS two fresh Linux clients authorized and bidirectional ping",
+      "passed": true,
+      "clients": 2,
+      "directions": 2,
+      "packets_per_direction": 10,
+      "loss_percent": 0
+    },
+    {
+      "step": "README restart retains network and clients",
+      "passed": true,
+      "clients": 2,
+      "directions": 2,
+      "packets_per_direction": 10,
+      "loss_percent": 0
+    },
+    {
+      "step": "BACKUP script exports consistent data and exact image then resumes service",
+      "passed": true
+    },
+    {
+      "step": "BACKUP restore preserves identity UI login network and clients",
+      "passed": true,
+      "clients": 2,
+      "directions": 2,
+      "packets_per_direction": 10,
+      "loss_percent": 0
+    },
+    {
+      "step": "Runtime restrictions",
+      "passed": true,
+      "user": "10001:10001",
+      "readonly": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "privileged": false
+    }
+  ]
+}

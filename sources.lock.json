@@ -1,0 +1,14 @@
+{
+  "release": "2026.10.22",
+  "zerotier": {
+    "version": "1.16.2",
+    "commit": "fc5c3ec22090b5b2a0f274e863651fe9ca489bf4",
+    "archive_sha256": "5f48e6a9492cc2a31f28f9f15e7fad5e1b4a82e95fe451464ff2b32d6bed9fa4"
+  },
+  "node_image": "node:24.22.1-alpine3.24",
+  "node_image_index_digest_observed": "sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53",
+  "node_image_amd64_digest_observed": "sha256:1200d815de24f8dcca745fbf7651d166034a35adbcad8860a8538ffff44f1420",
+  "ui_upstream_commit": "1b2284864de48d2dcae22582fff122fe24909c3d",
+  "ui_lock_sha256": "e883e40cf275ad856f1d067b8396b58a54d8e85c22a71a23d12468fcd60f39b7",
+  "note": "Base tag is versioned; apk upgrade consumes current security updates, so rebuilds are not claimed bit-for-bit identical. Keep the tested exported image for rollback."
+}

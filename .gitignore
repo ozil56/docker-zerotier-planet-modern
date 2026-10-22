@@ -1,0 +1,15 @@
+.env
+data/
+backups/
+node_modules/
+__pycache__/
+*.pyc
+.cache/
+*.tar
+*.tar.gz
+*.zip
+*.log
+*.secret
+*.c25519
+ui/etc/
+!ui/package-lock.json

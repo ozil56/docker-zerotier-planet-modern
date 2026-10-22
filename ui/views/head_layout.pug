@@ -1,0 +1,44 @@
+//-
+  ztncui - ZeroTier network controller UI
+  Copyright (C) 2017-2021  Key Networks (https://key-networks.com)
+  Licensed under GPLv3 - see LICENSE for details.
+
+mixin nav_item(name, displayName, href)
+  li.nav-item
+    a.nav-link(class=((navigate && navigate.active === name) ? 'active' : '') href=href) #{displayName}
+
+mixin json_value(value)
+  - if ((!!value ) && (value.constructor == Object || value.constructor == Array))
+      code(style='white-space: pre;')= JSON.stringify(value, null, 2)
+  - else
+      code= value
+
+doctype html
+html(lang='en')
+  head
+    title= title
+    meta(charset='utf-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1')
+    link(rel='stylesheet', href='/bscss/bootstrap.min.css')
+    link(rel='stylesheet', href='/bsicons/bootstrap-icons.min.css')
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    script(src='/jqjs/jquery.min.js')
+    script(src='/bsjs/bootstrap.bundle.min.js')
+  body
+    nav.navbar.navbar-expand-md.navbar-dark.fixed-top(style='background-color: #315b80')
+      .container-fluid
+        a.navbar-brand(href='https://key-networks.com' target='_blank' rel='noopener noreferrer')
+          img(src='/images/key-logo.svg' alt='Key Networks logo' height='25px' width='25px' style='display: inline')
+          |  Key Networks
+        button.navbar-toggler(type='button' data-bs-toggle='collapse' data-bs-target='#BarNav' aria-controls='BarNav' aria-expanded='false' aria-label='Toggle navigation')
+          span.navbar-toggler-icon
+        .collapse.navbar-collapse(id='BarNav')
+          ul.navbar-nav.me-auto
+            block nav_items
+          ul.navbar-nav
+            li.nav-item
+              block nav_login
+                a.nav-link(href='/logout')
+                  span.bi.bi-box-arrow-right
+                  |  Logout
+    block body_content
