@@ -66,6 +66,26 @@ git clone https://github.com/ozil56/docker-zerotier-planet-modern.git
 cd docker-zerotier-planet-modern
 ```
 
+若 Git 克隆因网络限制失败，可使用 GitHub 官方源码归档（这是 ali-test 实测的获取方式）：
+
+```bash
+curl --fail --location --retry 3 https://codeload.github.com/ozil56/docker-zerotier-planet-modern/tar.gz/refs/heads/main -o planet-modern-source.tar.gz
+```
+
+```bash
+mkdir docker-zerotier-planet-modern
+```
+
+```bash
+tar -xzf planet-modern-source.tar.gz -C docker-zerotier-planet-modern --strip-components=1
+```
+
+```bash
+cd docker-zerotier-planet-modern
+```
+
+这个备用路径要求目标目录不存在；不要往已有部署目录覆盖解压。没有 curl 时可用 `apt-get install -y curl` 安装。源码归档不带 Git 历史；以后更新仍应按迁移文档先备份。
+
 之后的服务端命令都在这个目录执行。它也是数据目录的父目录；不要随意更换工作目录。
 
 ### 3. 填写安装配置

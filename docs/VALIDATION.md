@@ -34,6 +34,14 @@
 
 可复查的脱敏步骤摘要见 `validation-results.json`。同一测试脚本为 `tests/integration.py`，只能在专门的新测试目录运行，见文件头。它创建 internal Docker 网络并取消主机端口映射，不能指向既有生产数据。
 
+## 发布后复验
+
+公开仓库首个完整提交 `f4f3cb1bde4ae58beb9b176c639111cb8a68f84b` 发布后，本机匿名 Git 克隆核对 69 个文件逐字节一致。ali-test 的 Git HTTPS 连接受网络限制中断，改用 GitHub 官方 codeload 的该固定提交归档；已把归档获取方式补入 README。
+
+2026-10-22 18:19（北京时间）完成第二轮：对公开归档执行 `docker compose build planet`，随后完整重跑初始化、登录、建网、双客户端通信、重启、备份和恢复，全部通过。为使用测试机 loopback 的临时下载代理，构建时附加了仅用于实验的 build network=host 覆盖；运行时仍为 internal 隔离网络。首次 Compose 构建未附加该覆盖导致 npm 无法连接代理，修正后通过。此网络设置不是默认生产运行配置。
+
+两轮均使用新身份；每轮三组双向各 10 包 ping，全部 0 丢包。验证机上的测试服务最终均停止。`validation-results.json` 同时保留两轮脱敏结果。
+
 ## 发现并修正的问题
 
 1. 最初 Git fetch 遇到网络中断，改为固定提交归档加 SHA-256 校验后构建成功。
