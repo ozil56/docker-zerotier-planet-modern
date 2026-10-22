@@ -2,6 +2,8 @@
 
 # Docker ZeroTier Planet Modern
 
+**[→ Générer et récupérer votre Planet personnalisé](#custom-planet)**
+
 Une version modernisée de Planet privé, du Controller intégré et de l'interface ztncui avec Docker Compose, fondée sur l'approche de [xubiaolin/docker-zerotier-planet](https://github.com/xubiaolin/docker-zerotier-planet).
 
 J'apprécie depuis longtemps la simplicité de déploiement du projet original. L'examen d'une vulnérabilité récente de Node.js m'a conduit à remettre à niveau l'environnement complet ; je souhaitais aussi actualiser le cœur ZeroTier de mon installation. Merci à xubiaolin et aux contributeurs, à Key Networks pour ztncui et aux auteurs de ZeroTier. Ce projet indépendant n'est pas une distribution officielle de ces équipes. Voir les [crédits et licences](THIRD_PARTY_NOTICES.md), en anglais.
@@ -113,3 +115,33 @@ sh scripts/backup.sh
 Les sauvegardes contiennent des secrets et **ne sont pas chiffrées**. Conservez une copie chiffrée hors du serveur. Consultez les guides anglais de [restauration](docs/BACKUP.md), de [dépannage](docs/TROUBLESHOOTING.md) et de [validation](docs/VALIDATION.md).
 
 Deux essais complets sur un serveur de test situé en Chine continentale ont couvert installation, deux clients Linux, redémarrage et restauration. Ils ne valident pas toutes les plateformes clientes, ARM ni toutes les topologies NAT publiques. Un redémarrage ferme les sessions de l'interface, mais conserve l'identité et les réseaux.
+
+<a id="custom-planet"></a>
+
+## Générer et récupérer votre Planet personnalisé
+
+La commande `docker compose --profile tools run --rm init` utilisée plus haut **génère déjà votre Planet**. Elle utilise `PUBLIC_IPV4`, l'éventuel `PUBLIC_IPV6` et `ZT_PORT` de .env, ainsi qu'une nouvelle identité et de nouvelles clés de signature. Aucun outil mkworld supplémentaire n'est nécessaire. Ne relancez pas init sur une installation existante.
+
+Le fichier à distribuer à tous vos clients est **`data/dist/planet`**, dans le répertoire du projet ; `data/one/planet` est la copie du serveur. Sur le serveur, vérifiez que le fichier n'est pas vide et que les deux empreintes SHA-256 sont identiques :
+
+```bash
+ls -lh data/dist/planet
+```
+
+```bash
+sha256sum data/one/planet data/dist/planet
+```
+
+Sur **votre ordinateur**, remplacez l'adresse du serveur et le chemin si nécessaire :
+
+```bash
+scp root@YOUR_SERVER_IP:/root/docker-zerotier-planet-modern/data/dist/planet ./planet
+```
+
+Conservez le nom exact `planet`, sans `.txt`. Comparez son empreinte à celle du serveur : `sha256sum ./planet` sous Linux ou `Get-FileHash .\planet -Algorithm SHA256` dans PowerShell. Ne distribuez jamais identity.secret, les fichiers JSON de signature ou tout le répertoire data.
+
+Autre méthode : avec le service démarré et le tunnel SSH du port 3000 ouvert, utilisez `http://127.0.0.1:3000/planet?key=YOUR_DOWNLOAD_KEY`. La clé se trouve dans `data/config/file_server.key` sur le serveur ; lisez-la en privé et ne publiez pas l'URL complète.
+
+Sur chaque client, arrêtez ZeroTier, sauvegardez l'ancien planet, remplacez uniquement ce fichier, puis redémarrez ZeroTier. Sous Linux, son emplacement est `/var/lib/zerotier-one/planet`. Rejoignez ensuite le Network ID à 16 chiffres hexadécimaux, autorisez le nœud dans l'interface, puis vérifiez le statut `OK`, l'adresse IP et les communications dans les deux sens. **Créer un réseau dans l'interface ne remplace pas l'installation du Planet sur les clients.** Le [guide détaillé des clients](docs/CLIENTS.md) fournit les commandes et les chemins Windows/macOS ; seul Linux a été validé de bout en bout.
+
+Le fichier `.moon` supplémentaire ne remplace pas cette procédure. Modifier .env après l'initialisation ne signe pas un nouveau Planet : un changement d'adresse publique ou de port nécessite de prévoir sa signature et sa redistribution. Récupérez une installation existante à partir de ses fichiers ou d'une sauvegarde vérifiée, sans réinitialiser.

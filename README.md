@@ -8,6 +8,8 @@ I have always appreciated how the original project made a private Planet easy to
 
 This explains the motivation for this release; it is not a claim about the upstream project's current maintenance status. This is an independent project, not an official release of any of those projects. See [credits and licenses](THIRD_PARTY_NOTICES.md).
 
+**Custom Planet is generated automatically during initialization.** Your client file is `data/dist/planet`. See [how it is generated](#generate-planet) and [how to download and install it on clients](#custom-planet). Creating a network in the UI alone does not configure a client to use your private Planet.
+
 ## Included in this release
 
 | Component | Version / approach |
@@ -128,13 +130,39 @@ The first build downloads and compiles dependencies and can take several minutes
 
 Do not use `docker compose pull` to obtain this project: this release provides a self-build workflow, not a public combined image. See [troubleshooting](docs/TROUBLESHOOTING.md) for download and build failures.
 
-### 5. Initialize exactly once
+<a id="generate-planet"></a>
+
+### 5. Generate your custom Planet and initialize once
 
 ```bash
 docker compose --profile tools run --rm init
 ```
 
 Expect `Initialized` and the directories `data/one`, `data/ui-etc`, `data/config` and `data/dist`. Repeating initialization should fail with `Refusing to initialize non-empty data directory`; this protects your existing identity.
+
+**This command generates your custom `planet` file; no separate mkworld tool or manual generation step is needed.** Before running it, step 3 must contain your actual `PUBLIC_IPV4`, optional working `PUBLIC_IPV6` and `ZT_PORT`. Initialization generates a new server identity and signing keys, then uses ZeroTier's official idtool to sign a Planet containing that identity and those endpoints.
+
+| Generated path, relative to this project | Purpose |
+| --- | --- |
+| `data/dist/planet` | The custom Planet file to copy to every client; the filename is exactly `planet`, without an extension |
+| `data/one/planet` | The server's copy of the same Planet |
+| `data/dist/*.moon` | An additional Moon file; not a replacement for the Planet client setup below |
+| `data/one/identity.secret`, `data/config/planet-signing.json`, `data/config/moon-signing.json` | Private identity/signing material; back up privately and never distribute to clients |
+
+In the **server's project directory**, check generation:
+
+```bash
+ls -lh data/dist/planet
+```
+
+```bash
+sha256sum data/one/planet data/dist/planet
+```
+
+Expect a nonempty file and identical SHA-256 values for both copies. The Planet file is a signed binary, not text to edit. It is generated for your installation, not downloaded from this repository. All clients using this Planet receive the same file; creating another network on the same Controller does not require regenerating it.
+
+**For an existing deployment, do not run init to obtain a file.** Use its existing `data/dist/planet` or recover from a verified backup. Do not delete `data/` to bypass the initialization guard. Changing `.env` later does not rewrite the signed Planet; changes to the public endpoint require a separately planned re-signing/distribution procedure, which this release does not automate.
+
 
 ```bash
 cat data/initial-admin-password.txt
@@ -176,11 +204,107 @@ Open **http://127.0.0.1:3443** in your browser. Sign in with `admin` and the pas
 
 For long-term domain access, configure HTTPS in a host nginx/Caddy reverse proxy pointing to `127.0.0.1:3443`. This project does not automatically obtain certificates or modify existing proxies.
 
-### 8. Create a network and connect clients
+<a id="custom-planet"></a>
 
-Follow the [step-by-step client guide](docs/CLIENTS.md): UI navigation, address pools, Planet file locations, member authorization and a two-device ping test. Opening the management page alone is not enough to validate a deployment.
+### 8. Get your custom Planet and connect clients
 
-Allow `ZT_PORT` (**UDP 9994** by default) through both the cloud security group and host firewall. Do not expose the Controller HTTP API or disable the whole firewall. Keep UI and download ports bound to loopback.
+#### 8.1 Create a private network in the UI
+
+Open **Networks → Add network**, enter a name, and select **Create Network**. Record the **16-hex-digit Network ID**. Open that network's **Easy setup**, choose a subnet that does not overlap your clients' LAN/VPN/Docker networks, and submit an address pool. For example: CIDR `10.235.0.0/24`, pool `10.235.0.10`–`10.235.0.200`. Keep the network Private.
+
+The Network ID identifies a virtual network. The `planet` file tells clients about your private roots; **one does not replace the other**.
+
+#### 8.2 Copy the generated Planet to your computer
+
+**Recommended: SCP.** On **your own computer**, replace the server address and the absolute project path if you installed elsewhere:
+
+```bash
+scp root@YOUR_SERVER_IP:/root/docker-zerotier-planet-modern/data/dist/planet ./planet
+```
+
+This creates `planet` in your computer's current directory. If SSH uses a nondefault port, add `-P YOUR_SSH_PORT` to `scp`. Keep the filename `planet`, not `planet.txt`. Only copy this distribution file; never copy the server's `identity.secret`, signing JSON or entire data directory to clients.
+
+**Alternative: authenticated browser download.** Start the service and keep the step 7 SSH tunnel (including port 3000) open. In the **server's project directory**, read the download key privately:
+
+```bash
+cat data/config/file_server.key
+```
+
+On your computer, replace `YOUR_DOWNLOAD_KEY` with that value and open:
+
+```text
+http://127.0.0.1:3000/planet?key=YOUR_DOWNLOAD_KEY
+```
+
+Save the response as `planet`. Without the correct key, `401 Unauthorized` is expected. This key is different from the UI password and Controller API token; do not publish the authenticated URL or paste the key into an issue. The download port stays local to the server and is reached through SSH.
+
+Compare the downloaded file with the server hash from step 5. On Linux:
+
+```bash
+sha256sum ./planet
+```
+
+On Windows PowerShell:
+
+```powershell
+Get-FileHash .\planet -Algorithm SHA256
+```
+
+The hash must match `data/dist/planet` on the server before you install it.
+
+#### 8.3 Replace Planet on each client
+
+Install the ZeroTier client first. Put the downloaded `planet` in the current directory of **each Linux client**. Arrange a brief interruption, then run the following there, not in the server container. Preserve the client's `identity.secret`. If `planet.before-private` already exists, choose a new backup filename rather than overwrite it.
+
+```bash
+sudo systemctl stop zerotier-one
+```
+
+```bash
+sudo cp -a /var/lib/zerotier-one/planet /var/lib/zerotier-one/planet.before-private
+```
+
+```bash
+sudo install -m 0644 ./planet /var/lib/zerotier-one/planet
+```
+
+```bash
+sudo systemctl start zerotier-one
+```
+
+| Client platform | Planet file location | Replacement |
+| --- | --- | --- |
+| Linux | `/var/lib/zerotier-one/planet` | Commands above |
+| Windows | `C:\ProgramData\ZeroTier\One\planet` | As administrator, stop ZeroTier One in Services, back up and replace only planet, then restart the service |
+| macOS | `/Library/Application Support/ZeroTier/One/planet` | With administrator rights, stop the service using the installed version's instructions, back up/replace planet, then start it |
+
+Only Linux end-to-end setup was tested here. Windows/macOS entries are path references; mobile clients vary by build. See the [client guide](docs/CLIENTS.md) for scope and troubleshooting. This flow uses **Planet replacement**; merely importing/orbiting the `.moon` file is not the same operation.
+
+#### 8.4 Join, authorize and verify communication
+
+On each Linux client, replace the placeholder with the Network ID from 8.1:
+
+```bash
+sudo zerotier-cli join YOUR_16_DIGIT_NETWORK_ID
+```
+
+```bash
+sudo zerotier-cli info
+```
+
+Match the 10-digit client node ID to the member in the UI and select **Authorized**. Then check:
+
+```bash
+sudo zerotier-cli listnetworks
+```
+
+Expect the network to show `OK` and an assigned ZeroTier IP. Test A→B and B→A using those assigned addresses, for example **only if B actually received this address**:
+
+```bash
+ping -c 10 10.235.0.20
+```
+
+Allow `ZT_PORT` (**UDP 9994** by default) through both the cloud security group and host firewall. Check client firewall rules if addresses are assigned but traffic fails. Do not expose the Controller HTTP API or disable the entire firewall. Opening the management UI alone is not a successful client-connectivity test.
 
 ### 9. Make the first backup
 

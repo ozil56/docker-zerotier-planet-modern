@@ -8,6 +8,8 @@
 
 这里描述的是本次维护的缘由，不对上游当前维护状态作判断。来源、版权和修改范围见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.zh-CN.md)。本项目不是上述项目的官方发行版。
 
+**自定义 Planet 会在初始化时自动生成，客户端下载文件为 `data/dist/planet`。** 直接查看 [生成步骤](#generate-planet) 和 [获取文件、替换客户端 Planet 的步骤](#custom-planet)。只在管理界面创建网络，还没有完成客户端的私有 Planet 配置。
+
 ## 这个版本包含什么
 
 | 部件 | 固定版本 / 方式 |
@@ -130,13 +132,39 @@ docker compose build planet
 
 不要使用 `docker compose pull` 获取本项目：本版发布的是自行构建流程，没有公共成品镜像。网络超时、编译失败的处理见 [故障排查](docs/zh-CN/TROUBLESHOOTING.md)。
 
-### 5. 初始化一次
+<a id="generate-planet"></a>
+
+### 5. 生成自定义 Planet，并完成一次性初始化
 
 ```bash
 docker compose --profile tools run --rm init
 ```
 
 预期显示 `Initialized`，并生成 `data/one`、`data/ui-etc`、`data/config`、`data/dist`。初始化不自动覆盖旧身份；重复运行应报 `Refusing to initialize non-empty data directory`，这是保护措施。
+
+**上面的命令就会生成你自己的 `planet` 文件，不需要另找 mkworld 工具或手动再生成一次。** 执行前，第 3 步必须已经填写实际的 `PUBLIC_IPV4`、可选且确实可用的 `PUBLIC_IPV6` 和 `ZT_PORT`。初始化会生成新的服务器身份和签名密钥，再调用 ZeroTier 官方 idtool，签出包含该身份和这些公网端点的 Planet。
+
+| 生成位置，相对于项目目录 | 用途 |
+| --- | --- |
+| `data/dist/planet` | 分发给每台客户端的自定义 Planet；文件名就是 `planet`，没有扩展名 |
+| `data/one/planet` | 服务端使用的同一份 Planet |
+| `data/dist/*.moon` | 额外生成的 Moon 文件，不能替代下文的 Planet 替换步骤 |
+| `data/one/identity.secret`、`data/config/planet-signing.json`、`data/config/moon-signing.json` | 私有身份和签名材料；需私下备份，绝不能分发给客户端 |
+
+在**服务器的项目目录**确认文件生成成功：
+
+```bash
+ls -lh data/dist/planet
+```
+
+```bash
+sha256sum data/one/planet data/dist/planet
+```
+
+预期文件大小非零，两行 SHA-256 相同。Planet 是经过签名的二进制文件，不是可以手工编辑的文本，也不是从本仓库下载的通用文件。使用这个 Planet 的客户端都安装同一份文件；在同一个 Controller 中另建网络，不需要重新生成 Planet。
+
+**已有部署要取文件时，不要重新执行 init。** 直接取现有的 `data/dist/planet`，或从已核验的备份恢复；不要删除 data 来绕过初始化保护。初始化后再改 .env 不会重写已签名的 Planet；更换公网地址或端口需要另行规划重新签名与分发，本版没有自动完成该操作的功能。
+
 
 ```bash
 cat data/initial-admin-password.txt
@@ -178,11 +206,107 @@ ssh -N -L 3443:127.0.0.1:3443 -L 3000:127.0.0.1:3000 root@YOUR_SERVER_IP
 
 长期使用域名时建议在宿主 nginx/Caddy 配置 HTTPS，反向代理到 `127.0.0.1:3443`。本仓库没有自动申请证书或更改已有反向代理。
 
-### 8. 创建网络并加入客户端
+<a id="custom-planet"></a>
 
-详见 [客户端接入逐步说明](docs/zh-CN/CLIENTS.md)，包括界面路径、地址池、Planet 文件位置、客户端授权和互相 ping 的验收方式。只有管理页面能打开，不足以证明部署成功。
+### 8. 获取自定义 Planet，安装到客户端并入网
 
-服务器云防火墙/安全组和主机防火墙应允许 `ZT_PORT`（默认 **UDP 9994**）到达服务器。不要开放 Controller HTTP 管理 API；不要为了测试关闭整个防火墙。UI 和下载端口保持本地绑定即可。
+#### 8.1 在管理界面创建私有网络
+
+进入 **Networks → Add network**，填写名称，点击 **Create Network**。记下 **16 位十六进制 Network ID**。打开该网络的 **Easy setup**，选择不与客户端 LAN、VPN、Docker 冲突的网段和地址池，再提交。例如 CIDR `10.235.0.0/24`，地址池 `10.235.0.10`–`10.235.0.200`。保持网络为 Private。
+
+Network ID 标识要加入的虚拟网络；`planet` 文件告诉客户端去使用哪些私有根节点。**两者都需要，不能互相替代。**
+
+#### 8.2 把生成好的 Planet 取到自己的电脑
+
+**推荐使用 SCP。** 在**你自己的电脑**打开终端，替换服务器地址；如果项目装在其他目录，也要修改绝对路径：
+
+```bash
+scp root@YOUR_SERVER_IP:/root/docker-zerotier-planet-modern/data/dist/planet ./planet
+```
+
+文件会保存到你电脑当前目录的 `planet`。如果 SSH 不是默认端口，在 scp 后增加 `-P YOUR_SSH_PORT`。文件名保持 `planet`，不要保存成 `planet.txt`。只取这个分发文件，不能把服务器的 identity.secret、签名 JSON 或整个 data 复制给客户端。
+
+**也可以通过带密钥的下载服务获取。** 先启动服务，并保持第 7 步的 SSH 隧道打开，包含 3000 端口转发。在**服务器项目目录**私下读取下载密钥：
+
+```bash
+cat data/config/file_server.key
+```
+
+在自己电脑的浏览器中，将 `YOUR_DOWNLOAD_KEY` 换成该值后打开：
+
+```text
+http://127.0.0.1:3000/planet?key=YOUR_DOWNLOAD_KEY
+```
+
+将下载内容保存为 `planet`。密钥不正确时返回 `401 Unauthorized` 是预期行为。这个密钥不是 UI 密码，也不是 Controller API token；不要公开完整下载 URL 或把密钥发到 Issue。下载端口仍绑定服务器本地地址，通过 SSH 隧道访问。
+
+将下载文件的 SHA-256 与第 5 步服务器结果比较。在 Linux 上：
+
+```bash
+sha256sum ./planet
+```
+
+在 Windows PowerShell 上：
+
+```powershell
+Get-FileHash .\planet -Algorithm SHA256
+```
+
+必须与服务端 `data/dist/planet` 的摘要一致，再安装到客户端。
+
+#### 8.3 在每台客户端替换 Planet
+
+先安装 ZeroTier 客户端。把下载的 `planet` 放到**每台 Linux 客户端**当前目录中，安排允许短暂断网的时间，再在客户端依次执行下列命令；不要在 Planet 服务端容器里执行。保留客户端原有 `identity.secret`。若 `planet.before-private` 已存在，应换一个新的备份文件名，避免覆盖以前的备份。
+
+```bash
+sudo systemctl stop zerotier-one
+```
+
+```bash
+sudo cp -a /var/lib/zerotier-one/planet /var/lib/zerotier-one/planet.before-private
+```
+
+```bash
+sudo install -m 0644 ./planet /var/lib/zerotier-one/planet
+```
+
+```bash
+sudo systemctl start zerotier-one
+```
+
+| 客户端平台 | Planet 文件位置 | 替换方法 |
+| --- | --- | --- |
+| Linux | `/var/lib/zerotier-one/planet` | 使用上述命令 |
+| Windows | `C:\ProgramData\ZeroTier\One\planet` | 管理员权限，在服务管理器停止 ZeroTier One，备份并仅替换 planet，再启动服务 |
+| macOS | `/Library/Application Support/ZeroTier/One/planet` | 管理员权限，按所装版本的服务管理方式停止服务，备份并替换 planet，再启动服务 |
+
+本项目本轮只完整验证了 Linux 客户端；Windows/macOS 这里是路径提示，移动客户端还取决于具体构建。详情和排障见 [客户端指南](docs/zh-CN/CLIENTS.md)。本流程使用**替换 Planet**，仅导入或 orbit `.moon` 文件不是同一操作。
+
+#### 8.4 加入网络、授权并验证通信
+
+在每台 Linux 客户端执行，把占位符替换为 8.1 记录的真实 Network ID：
+
+```bash
+sudo zerotier-cli join YOUR_16_DIGIT_NETWORK_ID
+```
+
+```bash
+sudo zerotier-cli info
+```
+
+核对客户端的 10 位节点 ID，在管理界面对应成员处勾选 **Authorized**，随后检查：
+
+```bash
+sudo zerotier-cli listnetworks
+```
+
+预期目标网络状态为 `OK`，并分配了 ZeroTier IP。用分配的地址测试 A→B、B→A，例如**仅当 B 确实分到下面地址时**：
+
+```bash
+ping -c 10 10.235.0.20
+```
+
+服务器云安全组和主机防火墙应允许 `ZT_PORT`（默认 **UDP 9994**）。若已分配 IP 但无法通信，检查客户端防火墙规则。不要开放 Controller HTTP 管理 API，也不要关闭整个防火墙。只有管理界面能打开，不代表客户端接入已成功。
 
 ### 9. 立即做第一份备份
 

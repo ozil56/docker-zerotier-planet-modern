@@ -2,6 +2,8 @@
 
 # Docker ZeroTier Planet Modern
 
+**[→ 自分の Planet を生成・取得する](#custom-planet)**
+
 [xubiaolin/docker-zerotier-planet](https://github.com/xubiaolin/docker-zerotier-planet) の構成を参考に、プライベート Planet、組み込み Controller、ztncui 管理画面を Docker Compose で構築・運用するために更新したプロジェクトです。
 
 元のプロジェクトは、プライベート Planet を簡単に導入できる優れた仕組みだと感じていました。今回の Node.js の脆弱性調査をきっかけに実行環境全体を見直し、使っていた環境で古くなっていた ZeroTier 本体も更新しました。xubiaolin と貢献者の皆様、ztncui を開発した Key Networks、ZeroTier の開発者の皆様に感謝します。本プロジェクトは独立したもので、各プロジェクトの公式配布物ではありません。[出典・ライセンス](THIRD_PARTY_NOTICES.md)（英語）をご覧ください。
@@ -113,3 +115,33 @@ sh scripts/backup.sh
 バックアップは秘密情報を含み、**暗号化されていません**。暗号化してサーバー外にも保存してください。詳しくは英語の[復元手順](docs/BACKUP.md)、[トラブルシューティング](docs/TROUBLESHOOTING.md)、[検証記録](docs/VALIDATION.md)をご覧ください。
 
 中国本土にあるテストサーバーで、新規導入、Linux クライアント 2 台、再起動、バックアップ復元までを 2 回検証しました。すべてのクライアント OS、ARM、実際のインターネット上の NAT 構成を検証したわけではありません。再起動後は管理画面への再ログインが必要ですが、identity とネットワークは保持されます。
+
+<a id="custom-planet"></a>
+
+## 自分の Planet を生成・取得する
+
+上記の `docker compose --profile tools run --rm init` が、**自分の環境専用の Planet を生成します**。.env の `PUBLIC_IPV4`、任意の `PUBLIC_IPV6`、`ZT_PORT` と、新しく生成した identity・署名鍵を使用します。別の mkworld ツールは不要です。既存環境で init を再実行しないでください。
+
+全クライアントに配布するファイルは、プロジェクトディレクトリ内の **`data/dist/planet`** です。`data/one/planet` はサーバー側の同一ファイルです。サーバー上でファイルが空でないことと、両方の SHA-256 が一致することを確認します。
+
+```bash
+ls -lh data/dist/planet
+```
+
+```bash
+sha256sum data/one/planet data/dist/planet
+```
+
+**自分のパソコン**で、サーバーのアドレスと必要に応じてインストール先の絶対パスを置き換えます。
+
+```bash
+scp root@YOUR_SERVER_IP:/root/docker-zerotier-planet-modern/data/dist/planet ./planet
+```
+
+ファイル名は拡張子なしの `planet` とし、`planet.txt` にしないでください。Linux の `sha256sum ./planet`、または PowerShell の `Get-FileHash .\planet -Algorithm SHA256` でサーバー側と一致することを確認します。identity.secret、署名用 JSON、data 全体は配布しないでください。
+
+ダウンロードサービスも利用できます。サービスを起動し、3000 番ポートの SSH トンネルを開いた状態で `http://127.0.0.1:3000/planet?key=YOUR_DOWNLOAD_KEY` にアクセスします。鍵はサーバーの `data/config/file_server.key` で自分だけが確認し、URL に入れます。鍵を含む URL は公開しないでください。
+
+各クライアントで ZeroTier を停止し、元の planet をバックアップして、このファイルだけを置き換えてから再起動します。Linux では `/var/lib/zerotier-one/planet` です。その後、16 桁の 16 進数 Network ID に参加し、管理画面でノードを承認して、`OK`、IP の割り当て、双方向通信を確認します。**管理画面でネットワークを作るだけでは、クライアントの Planet 設定は完了しません。** [クライアント詳細手順](docs/CLIENTS.md)にコマンドと Windows/macOS のパスを掲載しています。全手順を検証したのは Linux です。
+
+追加の `.moon` ファイルは、この Planet 置換の代わりにはなりません。初期化後に .env を編集しても Planet は再署名されません。公開 IP やポートを変える場合は、再署名と再配布を別途計画してください。既存環境はそのファイルまたは検証済みバックアップから復元し、再初期化しないでください。

@@ -12,7 +12,9 @@
 4. 在该网络进入 **Easy setup**，填写 `Network address in CIDR notation` 为 `10.235.0.0/24`，地址池起点 `10.235.0.10`，终点 `10.235.0.200`，点击 **Submit**。这个网段只是示例，应避开客户端家庭 LAN、VPN、Docker 和其他 ZeroTier 网络网段。
 5. 保持网络为 Private。不要为省略授权而改成 Public。
 
-## 2. 获取 Planet 文件
+## 2. 生成并获取 Planet 文件
+
+新安装执行 README 第 5 步 `docker compose --profile tools run --rm init` 时，已使用 .env 的公网地址、UDP 端口和新生成的服务器身份完成自定义 Planet 的生成与签名，无需另找生成器。已有安装直接使用现有文件或已核验备份，不能重新初始化。详见 [完整生成与核验步骤](../../README.zh-CN.md#generate-planet)。
 
 服务器上的文件是项目目录下 **data/dist/planet**。只有 `data/dist/` 是给客户端的公开分发文件；不要复制 `data/one/identity.secret`、`data/config/*signing.json` 或整个 data。
 

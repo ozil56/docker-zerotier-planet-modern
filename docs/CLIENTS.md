@@ -12,7 +12,9 @@ Complete the README startup checks first. The UI labels below are in English.
 4. Open **Easy setup** for that network. For example, set `Network address in CIDR notation` to `10.235.0.0/24`, the pool start to `10.235.0.10` and the end to `10.235.0.200`, then **Submit**. Choose a subnet that does not overlap any client LAN, VPN, Docker or other ZeroTier network.
 5. Keep the network **Private**. Authorize each member explicitly.
 
-## 2. Obtain the Planet file
+## 2. Generate and obtain the Planet file
+
+For a fresh installation, README step 5 (`docker compose --profile tools run --rm init`) already generates and signs your custom Planet using .env's public addresses/UDP port and a newly generated server identity. No separate generator is needed. For an existing installation, use the existing file or a verified backup instead of reinitializing. See the [complete generation and verification step](../README.md#generate-planet).
 
 The file is **data/dist/planet** in the server's project directory. Only `data/dist/` contains client distribution files. Never copy `data/one/identity.secret`, `data/config/*signing.json` or the entire data directory to clients.
 
